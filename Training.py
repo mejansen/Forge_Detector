@@ -24,6 +24,14 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     ----------------------------------
     @out: tf.Dataset object
     """
+
+    # load images from forged and genuine folders into memory
+    # add a dimension containing the writer
+    # normalise the values in the tensor
+    # create image pairs combining every image of the dataset with every other image labelling them acc to (if name_dim_1 == name_dim_2, 1, else 0)
+    # convert to tf.dataset
+    # shuffle?, batch and prefetch
+    # return the data set
     pass
 
 def main():
