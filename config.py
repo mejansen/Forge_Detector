@@ -3,7 +3,8 @@
 #
 # DIRECTORIES
 #
-weight_saving = "/instances"
+weight_saving = "instances"
+data_path = "data/signature_dataset"
 
 
 
@@ -11,7 +12,7 @@ weight_saving = "/instances"
 #
 # VARIABLES
 #
-batch_size = 128
+batch_size = 32
 shuffle_buffer_size = 1024
 prefetch_size = 124
 num_epochs = 20
