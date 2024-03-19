@@ -9,6 +9,7 @@ import config
 
 # load the configuration variables
 data_dir = config.data_path
+num_epochs = config.num_epochs
 weight_saving_dir = config.weight_saving
 batch_size = config.batch_size
 shuffle_buffer_size = config.shuffle_buffer_size
@@ -63,7 +64,14 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
 
 def main():
     train_ds, validation_ds = data_prep(data_dir, shuffle_buffer_size, batch_size, prefetch_size)
-    print("Done")
+
+    for epoch in range(num_epochs):
+        for x, target_x in train_ds:
+            for y, target_y in train_ds:
+                target = tf.equal(target_x, target_y)
+                target = tf.cast(target, tf.int32)
+
+
 
 
 if __name__ == "__main__":
