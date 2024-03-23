@@ -17,6 +17,9 @@ class Siamese_Network(tf.keras.Model):
         self.loss_object = tf.keras.losses.BinaryCrossentropy()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
 
+        self.metric_loss = tf.keras.metrics.Mean(name="loss")
+        self.metric_accuracy = tf.keras.metrics.Accuracy(name="accuracy")
+
 
 
     def call(self, sig_1, sig_2):
@@ -38,11 +41,15 @@ class Siamese_Network(tf.keras.Model):
             pred = self.call(img_1, img_2)
             loss = self.loss_object(target, pred)
 
+        
         # read out the gradients
         gradients = tape.gradient(loss, self.trainable_variables)
 
         # apply the gradients
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.metric_loss.update_state(loss)
+        self.metric_accuracy.update_state(target, pred)
 
         return
 

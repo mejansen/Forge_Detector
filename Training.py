@@ -6,6 +6,10 @@ from CNN import CNN
 from Siamese_NN import Siamese_Network
 import numpy as np
 import config
+import tqdm
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # load the configuration variables
 data_dir = config.data_path
@@ -14,6 +18,9 @@ weight_saving_dir = config.weight_saving
 batch_size = config.batch_size
 shuffle_buffer_size = config.shuffle_buffer_size
 prefetch_size = config.prefetch_size
+
+train_res_los = []
+train_res_acc = []
 
 
 
@@ -66,6 +73,20 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
 
     return train_ds, validation_ds # finished
 
+def log_training(network, epoch):
+
+    if epoch != 0:
+        epoch_loss = network.metric_loss.result()
+        epoch_acc = network.metric_accuracy.result()
+        tf.summary.scalar(f"loss", epoch_loss, step=epoch)
+        tf.summary.scalar(f"accuracy", epoch_acc, step=epoch)
+        print(f"Accurracy: {epoch_acc}, Loss: {epoch_loss}")
+        train_res_los.append(epoch_loss.numpy())
+        train_res_acc.append(epoch_acc.numpy())
+
+        network.metric_loss.reset_states()
+        network.metric_accuracy.reset_states()
+
 def main():
 
     #
@@ -80,14 +101,33 @@ def main():
 
     for epoch in range(num_epochs):
         # for every step, we always need two samples from which the targets will be constructed
-        for x, target_x in train_ds:
+        for x, target_x in tqdm.tqdm(train_ds):
             for y, target_y in train_ds:
                 target = tf.equal(target_x, target_y)
                 target = tf.cast(target, tf.int32) # <- this is our finished target!
 
                 model.train_step(x, y, target)
-
+        log_training(model, epoch)
         print("Epoch " + str(epoch) + " finished")
+    
+    plotting = {}
+
+    plotting["train"] = [train_res_los, train_res_acc]
+
+    fig, axs = plt.subplots(2, 2, figsize=(15, 20))
+    for ax, key in zip(axs.flat, plotting.keys()):
+    
+        train_l, train_a = plotting[key]
+    
+        line1, = ax.plot(train_l)
+        line2, = ax.plot(train_a)
+        ax.legend((line1,line2),("training loss", "train accuracy"))
+        ax.set_title(key)
+        ax.set(xlabel="epochs", ylabel="Loss/Accuracy")
+        #ax.label_outer()
+    
+    plt.show()  
+    
 
 
 
