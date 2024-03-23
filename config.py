@@ -12,7 +12,7 @@ data_path = "data/signature_dataset"
 #
 # VARIABLES
 #
-batch_size = 4
+batch_size = 5
 shuffle_buffer_size = 1024
 prefetch_size = 124
-num_epochs = 1
+num_epochs = 5

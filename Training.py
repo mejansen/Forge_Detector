@@ -31,6 +31,9 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     img_height = 150
     img_width = 200
 
+    #
+    # create the training and validation data set from the files in the directory
+    #
     train_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
         validation_split = 0.2,
@@ -47,7 +50,8 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
         image_size = (img_height, img_width),
         batch_size = batch_size)
 
-    # rescale the values to a range of -1 and 1
+
+    # rescale the values to a range of -1 and 1 for both data sets
     def preprocessing_func(img, label):
         img = tf.cast(img, tf.float32)
         img = (img/128) - 1
@@ -60,16 +64,30 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     train_ds = train_ds.shuffle(shuffle_buffer_size).prefetch(prefetch_size)
     validation_ds = validation_ds.shuffle(shuffle_buffer_size).prefetch(prefetch_size)
 
-    return train_ds, validation_ds
+    return train_ds, validation_ds # finished
 
 def main():
+
+    #
+    # create the data
+    #
     train_ds, validation_ds = data_prep(data_dir, shuffle_buffer_size, batch_size, prefetch_size)
 
+    #
+    # create the model
+    #
+    model = Siamese_Network()
+
     for epoch in range(num_epochs):
+        # for every step, we always need two samples from which the targets will be constructed
         for x, target_x in train_ds:
             for y, target_y in train_ds:
                 target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.int32)
+                target = tf.cast(target, tf.int32) # <- this is our finished target!
+
+                model.train_step(x, y, target)
+
+        print("Epoch " + str(epoch) + " finished")
 
 
 
