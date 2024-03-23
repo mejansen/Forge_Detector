@@ -21,6 +21,8 @@ prefetch_size = config.prefetch_size
 
 train_res_los = []
 train_res_acc = []
+test_res_los = []
+test_res_acc = []
 
 
 
@@ -43,7 +45,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     #
     train_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split = 0.2,
+        validation_split = 0.1,
         subset = "training",
         seed = 123,
         image_size = (img_height, img_width),
@@ -51,7 +53,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
 
     validation_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split = 0.2,
+        validation_split = 0.1,
         subset = "validation",
         seed = 123,
         image_size = (img_height, img_width),
@@ -74,18 +76,39 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     return train_ds, validation_ds # finished
 
 def log_training(network, epoch):
+    epoch_train_loss = network.metric_train_loss.result()
+    epoch_train_acc = network.metric_train_accuracy.result()
+    epoch_test_loss = network.metric_test_loss.result()
+    epoch_test_acc = network.metric_test_accuracy.result()
 
-    if epoch != 0:
-        epoch_loss = network.metric_loss.result()
-        epoch_acc = network.metric_accuracy.result()
-        tf.summary.scalar(f"loss", epoch_loss, step=epoch)
-        tf.summary.scalar(f"accuracy", epoch_acc, step=epoch)
-        print(f"Accurracy: {epoch_acc}, Loss: {epoch_loss}")
-        train_res_los.append(epoch_loss.numpy())
-        train_res_acc.append(epoch_acc.numpy())
+    print(f"in Epoch " + str(epoch) + f" Train accurracy: {epoch_train_acc}, loss: {epoch_train_loss} - Test accuracy:{epoch_test_acc} , loss {epoch_test_loss}")
 
-        network.metric_loss.reset_states()
-        network.metric_accuracy.reset_states()
+    train_res_los.append(epoch_train_loss.numpy())
+    train_res_acc.append(epoch_train_acc.numpy())
+    test_res_los.append(epoch_test_loss.numpy())
+    test_res_acc.append(epoch_test_acc.numpy())
+    
+    network.metric_train_loss.reset_states()
+    network.metric_train_accuracy.reset_states()
+    network.metric_test_loss.reset_states()
+    network.metric_test_accuracy.reset_states()
+
+def show_graph(plotting):
+    fig, axs = plt.subplots(2, 1, figsize=(15, 20))
+    for ax, key in zip(axs.flat, plotting.keys()):
+    
+        train_l, train_a, test_l, test_a = plotting[key]
+    
+        line1, = ax.plot(train_l)
+        line2, = ax.plot(train_a)
+        line3, = ax.plot(test_l)
+        line4, = ax.plot(test_a)
+        ax.legend((line1,line2, line3, line4),("training loss", "train accuracy", "test loss", "test accuracy"))
+        ax.set_title(key)
+        ax.set(xlabel="epochs", ylabel="Loss/Accuracy")
+        #ax.label_outer()
+    
+    plt.show()  
 
 def main():
 
@@ -107,29 +130,28 @@ def main():
                 target = tf.cast(target, tf.int32) # <- this is our finished target!
 
                 model.train_step(x, y, target)
+        
+        for x, target_x in validation_ds:
+            for y, target_y in validation_ds:
+                target = tf.equal(target_x, target_y)
+                target = tf.cast(target, tf.int32) # <- this is our finished target!
+
+                model.test_step(x, y, target)
+
         log_training(model, epoch)
-        print("Epoch " + str(epoch) + " finished")
     
     plotting = {}
 
-    plotting["train"] = [train_res_los, train_res_acc]
+    plotting["train"] = [train_res_los, train_res_acc, test_res_los, test_res_acc]
 
-    fig, axs = plt.subplots(2, 2, figsize=(15, 20))
-    for ax, key in zip(axs.flat, plotting.keys()):
-    
-        train_l, train_a = plotting[key]
-    
-        line1, = ax.plot(train_l)
-        line2, = ax.plot(train_a)
-        ax.legend((line1,line2),("training loss", "train accuracy"))
-        ax.set_title(key)
-        ax.set(xlabel="epochs", ylabel="Loss/Accuracy")
-        #ax.label_outer()
-    
-    plt.show()  
-    
+    show_graph(plotting)
 
-
+    for x, target_x in validation_ds:
+            for y, target_y in validation_ds:
+                target = tf.equal(target_x, target_y)
+                target = tf.cast(target, tf.int32) # <- this is our finished target!
+                prediction = model.call(x,y)
+                print(f"Prediction: {prediction} Target: {target}")
 
 
 if __name__ == "__main__":

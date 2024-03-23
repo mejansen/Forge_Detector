@@ -15,10 +15,13 @@ class Siamese_Network(tf.keras.Model):
 
         # we use BCE loss, since this is a two-class classification task
         self.loss_object = tf.keras.losses.BinaryCrossentropy()
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
+        self.optimizer = tf.keras.optimizers.RMSprop(learning_rate = 2e-4, rho=0.9, epsilon=1e-08)
+        #self.optimizer = tf.keras.optimizers.Adam(learning_rate = 1e-3)
 
-        self.metric_loss = tf.keras.metrics.Mean(name="loss")
-        self.metric_accuracy = tf.keras.metrics.Accuracy(name="accuracy")
+        self.metric_train_loss = tf.keras.metrics.Mean(name="_train_loss")
+        self.metric_train_accuracy = tf.keras.metrics.Accuracy(name="train_accuracy")
+        self.metric_test_loss = tf.keras.metrics.Mean(name="_test_loss")
+        self.metric_test_accuracy = tf.keras.metrics.Accuracy(name="test_accuracy")
 
 
 
@@ -47,11 +50,23 @@ class Siamese_Network(tf.keras.Model):
 
         # apply the gradients
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.siam_one.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.siam_two.trainable_variables))
 
-        self.metric_loss.update_state(loss)
-        self.metric_accuracy.update_state(target, pred)
+        self.metric_train_loss.update_state(loss)
+        self.metric_train_accuracy.update_state(target, pred)
 
         return
+    
+    def test_step(self, img_1, img_2, target):
+        pred = self.call(img_1, img_2)
+        loss = self.loss_object(target, pred)
+
+        self.metric_test_loss.update_state(loss)
+        self.metric_test_accuracy.update_state(target, pred)
+
+        return
+
 
         # discard the tape? I don't yet know how this works :'(
 
