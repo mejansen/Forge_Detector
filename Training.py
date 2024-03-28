@@ -64,6 +64,9 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     def preprocessing_func(img, label):
         img = tf.cast(img, tf.float32)
         img = (img/128) - 1
+        # adding some random noise to perform data augmentation
+        noise = tf.random.normal(shape = tf.shape(img), mean = 0.0, stddev = 1, dtype = tf.float32)
+        img = tf.add(img, noise)
         return img, label
 
     train_ds = train_ds.map(lambda img, target: preprocessing_func(img, target))
