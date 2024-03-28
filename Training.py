@@ -45,7 +45,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     #
     train_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split = 0.1,
+        validation_split = 0.2,
         subset = "training",
         seed = 123,
         image_size = (img_height, img_width),
@@ -53,7 +53,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
 
     validation_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split = 0.1,
+        validation_split = 0.2,
         subset = "validation",
         seed = 123,
         image_size = (img_height, img_width),
@@ -125,33 +125,39 @@ def main():
     for epoch in range(num_epochs):
         # for every step, we always need two samples from which the targets will be constructed
         for x, target_x in tqdm.tqdm(train_ds):
+            target = tf.equal(target_x, target_x)
+            target = tf.cast(target, tf.float32) # <- this is our finished target!
+            model.train_step(x, x, target)
+
             for y, target_y in train_ds:
                 target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.int32) # <- this is our finished target!
+                target = tf.cast(target, tf.float32) # <- this is our finished target!
 
                 model.train_step(x, y, target)
+                break
+                
         
         for x, target_x in validation_ds:
             for y, target_y in validation_ds:
                 target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.int32) # <- this is our finished target!
+                target = tf.cast(target, tf.float32) # <- this is our finished target!
 
                 model.test_step(x, y, target)
 
         log_training(model, epoch)
-    
+
     plotting = {}
 
     plotting["train"] = [train_res_los, train_res_acc, test_res_los, test_res_acc]
 
-    show_graph(plotting)
+    #show_graph(plotting)
 
     for x, target_x in validation_ds:
-            for y, target_y in validation_ds:
+             for y, target_y in validation_ds:
                 target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.int32) # <- this is our finished target!
+                target = tf.cast(target, tf.float32) # <- this is our finished target!
                 prediction = model.call(x,y)
-                print(f"Prediction: {prediction} Target: {target}")
+                print(f"Prediction: {prediction} Target: {target} XT = {target_x} YT = {target_y}")
 
 
 if __name__ == "__main__":
