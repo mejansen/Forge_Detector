@@ -49,7 +49,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
         subset = "training",
         seed = 123,
         image_size = (img_height, img_width),
-        batch_size = batch_size)
+        batch_size = None)
 
     validation_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
@@ -57,7 +57,7 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
         subset = "validation",
         seed = 123,
         image_size = (img_height, img_width),
-        batch_size = batch_size)
+        batch_size = None)
 
 
     # rescale the values to a range of -1 and 1 for both data sets
@@ -70,8 +70,8 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     validation_ds = validation_ds.map(lambda img, target: preprocessing_func(img, target))
 
     # shuffle, batch, and prefetch
-    train_ds = train_ds.shuffle(shuffle_buffer_size).prefetch(prefetch_size)
-    validation_ds = validation_ds.shuffle(shuffle_buffer_size).prefetch(prefetch_size)
+    train_ds = train_ds.shuffle(shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+    validation_ds = validation_ds.shuffle(shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_ds, validation_ds # finished
 

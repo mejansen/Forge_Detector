@@ -4,8 +4,7 @@ from CNN import CNN
 class Siamese_Network(tf.keras.Model):
     def __init__(self):
         super().__init__()
-        self.siam_one = CNN(output_size = 1024)
-        self.siam_two = CNN(output_size = 1024)
+        self.siam = CNN(output_size = 1024)
 
         # add some dense layers on top that end in a sigmoid activation with only one unit
         self.dense_layers = [tf.keras.layers.Dense(units = 512, activation = 'relu'),
@@ -27,8 +26,8 @@ class Siamese_Network(tf.keras.Model):
 
     def call(self, sig_1, sig_2):
         # create the latent representations of the signature
-        latent_rep_1 = self.siam_one(sig_1)
-        latent_rep_2 = self.siam_two(sig_2)
+        latent_rep_1 = self.siam(sig_1)
+        latent_rep_2 = self.siam(sig_2)
 
         # concatenate the latent representations to feed them into an MLP module
         x = tf.concat([latent_rep_1, latent_rep_2], axis = 1)
