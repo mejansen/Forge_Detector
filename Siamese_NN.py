@@ -14,8 +14,8 @@ class Siamese_Network(tf.keras.Model):
 
         # we use BCE loss, since this is a two-class classification task
         self.loss_bce = tf.keras.losses.BinaryCrossentropy()
-        #self.optimizer = tf.keras.optimizers.RMSprop(learning_rate = 2e-3, rho=0.9, epsilon=1e-08)
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate = 2e-3)
+        self.optimizer = tf.keras.optimizers.RMSprop(learning_rate = 2e-3, rho=0.9, epsilon=1e-08)
+        #self.optimizer = tf.keras.optimizers.Adam(learning_rate = 35e-4)
 
         self.metric_train_loss = tf.keras.metrics.Mean(name="_train_loss")
         self.metric_train_accuracy = tf.keras.metrics.Accuracy(name="train_accuracy")

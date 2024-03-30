@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 import tensorflow_datasets as tfds
 from CNN import CNN
 from Siamese_NN import Siamese_Network
+import create_dataset
 import numpy as np
 import config
 import tqdm
 import os
+import tempfile
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -37,40 +39,32 @@ def data_prep(directory_path, shuffle_buffer_size, batch_size, prefetch_size):
     @out: tf.Dataset object
     """
 
-    img_height = 150
-    img_width = 200
+    all_data = create_dataset.create_dataset_from_Data(False).shuffle(shuffle_buffer_size)
+    count = len(list(all_data))
+    print(f"Amount of Data: {count}")
+    validation_ds = all_data.take(300)
+    train_ds = all_data.skip(300)
 
-    #
-    # create the training and validation data set from the files in the directory
-    #
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        data_dir,
-        validation_split = 0.2,
-        subset = "training",
-        seed = 123,
-        image_size = (img_height, img_width),
-        batch_size = None)
-
-    validation_ds = tf.keras.utils.image_dataset_from_directory(
-        data_dir,
-        validation_split = 0.2,
-        subset = "validation",
-        seed = 123,
-        image_size = (img_height, img_width),
-        batch_size = None)
-
+    #for image, label in validation_ds:
 
     # rescale the values to a range of -1 and 1 for both data sets
-    def preprocessing_func(img, label):
-        img = tf.cast(img, tf.float32)
-        img = (img/128) - 1
+    def preprocessing_func(img_a, img_b, label):
+        img_a = tf.cast(img_a, tf.float32)
+        img_a = (img_a/128) - 1
         # adding some random noise to perform data augmentation
-        noise = tf.random.normal(shape = tf.shape(img), mean = 0.0, stddev = 1, dtype = tf.float32)
-        img = tf.add(img, noise)
-        return img, label
+        noise = tf.random.normal(shape = tf.shape(img_a), mean = 0.0, stddev = 1, dtype = tf.float32)
+        img_a = tf.add(img_a, noise)
 
-    train_ds = train_ds.map(lambda img, target: preprocessing_func(img, target))
-    validation_ds = validation_ds.map(lambda img, target: preprocessing_func(img, target))
+        img_b = tf.cast(img_b, tf.float32)
+        img_b = (img_b/128) - 1
+        # adding some random noise to perform data augmentation
+        noise = tf.random.normal(shape = tf.shape(img_b), mean = 0.0, stddev = 1, dtype = tf.float32)
+        img_b = tf.add(img_b, noise)
+        return img_a, img_b, label
+
+    train_ds = train_ds.map(lambda img_a, img_b, target: preprocessing_func(img_a, img_b, target))
+
+    validation_ds = validation_ds.map(lambda img_a, img_b, target: preprocessing_func(img_a, img_b, target))
 
     # shuffle, batch, and prefetch
     train_ds = train_ds.shuffle(shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
@@ -115,6 +109,8 @@ def show_graph(plotting):
 
 def main():
 
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
     #
     # create the data
     #
@@ -127,25 +123,13 @@ def main():
 
     for epoch in range(num_epochs):
         # for every step, we always need two samples from which the targets will be constructed
-        for x, target_x in tqdm.tqdm(train_ds):
-            target = tf.equal(target_x, target_x)
-            target = tf.cast(target, tf.float32) # <- this is our finished target!
-            model.train_step(x, x, target)
+        for x, y, target in tqdm.tqdm(train_ds):
+            model.train_step(x, y, target)
 
-            for y, target_y in train_ds:
-                target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.float32) # <- this is our finished target!
-
-                model.train_step(x, y, target)
-                break
                 
         
-        for x, target_x in validation_ds:
-            for y, target_y in validation_ds:
-                target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.float32) # <- this is our finished target!
-
-                model.test_step(x, y, target)
+        for x, y, target in validation_ds:
+            model.test_step(x, y, target)
 
         log_training(model, epoch)
 
@@ -153,14 +137,11 @@ def main():
 
     plotting["train"] = [train_res_los, train_res_acc, test_res_los, test_res_acc]
 
-    #show_graph(plotting)
+    show_graph(plotting)
 
-    for x, target_x in validation_ds:
-             for y, target_y in validation_ds:
-                target = tf.equal(target_x, target_y)
-                target = tf.cast(target, tf.float32) # <- this is our finished target!
+    for x, y, target in validation_ds:
                 prediction = model.call(x,y)
-                print(f"Prediction: {prediction} Target: {target} XT = {target_x} YT = {target_y}")
+                print(f"Prediction: {prediction} Target: {target}")
 
 
 if __name__ == "__main__":
