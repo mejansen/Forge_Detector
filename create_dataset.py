@@ -6,52 +6,76 @@ from Siamese_NN import Siamese_Network
 import numpy as np
 import config
 import tqdm
+import multiprocessing
 import os
 import tempfile
 
 data_dir = config.data_path
 
-def create_dataset_from_Data(create_new = False):
+
+def create_dataset():
     path = os.path.join(tempfile.gettempdir(), "saved_data")
-    
+    #
+    # create the training and validation data set from the files in the directory
+    #
+    img_height = 150
+    img_width = 200
 
-    if(create_new):
-        #
-        # create the training and validation data set from the files in the directory
-        #
-        img_height = 150
-        img_width = 200
-        all_data_ds = tf.keras.utils.image_dataset_from_directory(
-            data_dir,
-            #validation_split = 0.0,
-            #subset = "both",
-            #seed = 123,
-            image_size = (img_height, img_width),
-            batch_size = None)
-    
-        combined_new_data = tf.data.Dataset
-        first = True
-        for image, label in tqdm.tqdm(all_data_ds):
+    # we get a sorted and an unsortet dataset to have fewer iterations over the whole data (but it cost memory :() 
+    # It reduced the calculation time by a minimum of 3 minutes
+    all_data_ds_sortet_in_batches = tf.keras.utils.image_dataset_from_directory(
+        data_dir,
+        shuffle = False,
+        color_mode = "grayscale",
+        image_size = (img_height, img_width),
+        batch_size = 5
+    )
+
+    all_data_ds = tf.keras.utils.image_dataset_from_directory(
+        data_dir,
+        color_mode = "grayscale",
+        image_size = (img_height, img_width),
+        batch_size = None)
+        
+    combined_new_data = tf.data.Dataset
+    first = True
+
+    for images, labels in tqdm.tqdm(all_data_ds_sortet_in_batches):
+        for image in images:
             count_wrong = 0
-            count_right = 0
-            for image_y, label_y in all_data_ds:
-                target = tf.equal(label, label_y)
-                if target:
-                    if first:
-                        combined_new_data = tf.data.Dataset.from_tensor_slices(([image], [image_y],[1.0]))
-                        first = False
-                    else:
-                        combined_new_data = combined_new_data.concatenate(tf.data.Dataset.from_tensor_slices(([image], [image_y],[1.0])))
-                    count_right += 1
-
-            while count_wrong < count_right:
+            for image_to_pair in images:
+                if first:
+                    combined_new_data = tf.data.Dataset.from_tensor_slices(([image], [image_to_pair],[1.0]))
+                    first = False
+                else:
+                    combined_new_data = combined_new_data.concatenate(tf.data.Dataset.from_tensor_slices(([image], [image_to_pair],[1.0])))
+                
+            while count_wrong < 5:
                 for image_y, label_y in all_data_ds.take(1):
-                    target = tf.equal(label, label_y)
+                    target = tf.equal(labels[0], label_y)
                     if target == False:
                         combined_new_data = combined_new_data.concatenate(tf.data.Dataset.from_tensor_slices(([image], [image_y],[0.0])))
                         count_wrong += 1
+    tf.data.experimental.save(combined_new_data, path)
 
-        tf.data.experimental.save(combined_new_data, path)
-    else:
+
+
+def create_dataset_from_Data(create_new = False):
+    path = os.path.join(tempfile.gettempdir(), "saved_data")
+    data_is_not_on_disk = False
+    
+    try:
         combined_new_data = tf.data.experimental.load(path)
+    except Exception:
+        data_is_not_on_disk = True
+
+
+    if(create_new or data_is_not_on_disk):
+        #using a thread to free the memory after the dataset is createt (there was a few errors that happend sometimes)
+        p = multiprocessing.Process(target=create_dataset) 
+        p.start() 
+        p.join()
+        combined_new_data = tf.data.experimental.load(path)
+
     return combined_new_data
+
