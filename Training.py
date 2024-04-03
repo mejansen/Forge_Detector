@@ -130,8 +130,9 @@ def main():
         
         for x, y, target in validation_ds:
             model.test_step(x, y, target)
-
+            
         log_training(model, epoch)
+
 
     plotting = {}
 
@@ -140,8 +141,9 @@ def main():
     show_graph(plotting)
 
     for x, y, target in validation_ds:
-                prediction = model.call(x,y)
-                print(f"Prediction: {prediction} Target: {target}")
+        prediction = model.call(x,y)
+        print(f"Prediction: {prediction} Target: {target}")
+        break
 
 
 if __name__ == "__main__":

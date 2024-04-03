@@ -1,5 +1,11 @@
 import tensorflow as tf
 from CNN import CNN
+from tensorflow.keras import backend as K
+
+def euclidian_distance(input):
+    x, y = input
+    sum_square = K.sum(K.square(x - y), axis=1, keepdims=True)
+    return K.sqrt(K.maximum(sum_square, K.epsilon()))
 
 class Siamese_Network(tf.keras.Model):
     def __init__(self):
@@ -7,15 +13,15 @@ class Siamese_Network(tf.keras.Model):
         self.siam = CNN(output_size = 1024)
 
         # add some dense layers on top that end in a sigmoid activation with only one unit
-        self.dense_layers = [tf.keras.layers.Dense(units = 512, activation = 'relu'),
-                             tf.keras.layers.Dense(units = 256, activation = 'relu'),
+        self.dense_layers = [#tf.keras.layers.Dense(units = 512, activation = 'relu'),
+                             #tf.keras.layers.Dense(units = 256, activation = 'relu'),
                              tf.keras.layers.Dense(units = 128, activation = 'relu'),
                              tf.keras.layers.Dense(units = 1, activation = "sigmoid")]
 
         # we use BCE loss, since this is a two-class classification task
         self.loss_bce = tf.keras.losses.BinaryCrossentropy()
         #self.optimizer = tf.keras.optimizers.RMSprop(learning_rate = 2e-3, rho=0.9, epsilon=1e-08)
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate = 35e-4)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate = 4e-4)
 
         self.metric_train_loss = tf.keras.metrics.Mean(name="_train_loss")
         self.metric_train_accuracy = tf.keras.metrics.Accuracy(name="train_accuracy")
@@ -30,7 +36,8 @@ class Siamese_Network(tf.keras.Model):
         latent_rep_2 = self.siam(sig_2)
 
         # concatenate the latent representations to feed them into an MLP module
-        x = tf.concat([latent_rep_1, latent_rep_2], axis = 1)
+        #x = tf.concat([latent_rep_1, latent_rep_2], axis = 1)
+        x = tf.keras.layers.Lambda(euclidian_distance)([latent_rep_1, latent_rep_2])
         for layer in self.dense_layers:
             x = layer(x)
 
@@ -53,7 +60,7 @@ class Siamese_Network(tf.keras.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         self.metric_train_loss.update_state(loss)
-        self.metric_train_accuracy.update_state(target, pred)
+        self.metric_train_accuracy.update_state(target, tf.math.round(pred))
 
         return
     
@@ -63,7 +70,7 @@ class Siamese_Network(tf.keras.Model):
         loss = self.loss_bce(target, pred)
 
         self.metric_test_loss.update_state(loss)
-        self.metric_test_accuracy.update_state(target, pred)
+        self.metric_test_accuracy.update_state(target, tf.math.round(pred))
 
         return
 
