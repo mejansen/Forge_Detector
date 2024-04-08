@@ -26,8 +26,6 @@ test_res_acc = []
 
 def data_prep(shuffle_buffer_size, batch_size):
     """This function shall at some point take the directory path where the data is located, as well as some guiding variables. It shall prepare the data and convert it to a tf.Dataset object.
-
-    @param directory_path: (string) directory
     @param shuffle_buffer_size: (int) how many items are shuffled before batching
     @param batch_size: (int) determines the size of the training examples
     @param prefetch_size: (int) determines how many training examples are always kept ready
@@ -75,12 +73,17 @@ def main():
     #
     # create the data
     #
-    train_ds, validation_ds = data_prep(data_dir, shuffle_buffer_size, batch_size, prefetch_size)
+    train_ds, validation_ds = data_prep( shuffle_buffer_size, batch_size)
 
     #
     # create the model
     #
     model = Siamese_Network()
+
+    model.siam.build(input_shape=(1,150,200,1))
+    #model.build()
+
+    model.siam.summary()
 
     for epoch in range(num_epochs):
         for x, y, target in tqdm.tqdm(train_ds):
@@ -91,6 +94,10 @@ def main():
             model.test_step(x, y, target)
             
         Log_modul_data.logging_after_test(model, epoch)
+
+        if epoch % config.save_model_epoch == 0:
+            # Save model (its parameters)
+            model.save_weights(f"./saved_models/trained_weights_{epoch}", save_format="tf")
 
     Log_modul_data.show_graph()
 

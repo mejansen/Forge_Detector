@@ -13,9 +13,13 @@ epoch_train_acc = tf.keras.metrics
 epoch_test_loss = tf.keras.metrics
 epoch_test_acc = tf.keras.metrics
 
+outputString = ""
+
 def logging_after_train(network):
     epoch_train_loss = network.metric_loss.result()
     epoch_train_acc = network.metric_accuracy.result()
+
+    print(f" Train accurracy: {epoch_train_acc}, loss: {epoch_train_loss}")
 
     train_res_los.append(epoch_train_loss.numpy())
     train_res_acc.append(epoch_train_acc.numpy())
@@ -27,7 +31,7 @@ def logging_after_test(network, epoch):
     epoch_test_loss = network.metric_loss.result()
     epoch_test_acc = network.metric_accuracy.result()
 
-    print(f"in Epoch " + str(epoch) + f" Train accurracy: {epoch_train_acc}, loss: {epoch_train_loss} - Test accuracy:{epoch_test_acc} , loss {epoch_test_loss}")
+    print(f"in Epoch " + str(epoch) + f" - Test accuracy:{epoch_test_acc} , loss {epoch_test_loss}")
 
     test_res_los.append(epoch_test_loss.numpy())
     test_res_acc.append(epoch_test_acc.numpy())

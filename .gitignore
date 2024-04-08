@@ -746,3 +746,7 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/python,windows,linux,pycharm,visualstudio,visualstudiocode,virtualenv
+
+
+#ignore the models, which the net createt
+/saved_models

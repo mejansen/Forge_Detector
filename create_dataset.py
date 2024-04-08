@@ -11,9 +11,10 @@ import os
 import tempfile
 
 data_dir = config.data_path
+data_dir_forced = config.data_path_forged
 
 
-def create_dataset():
+def create_dataset_siames():
     path = os.path.join(tempfile.gettempdir(), "saved_data")
     #
     # create the training and validation data set from the files in the directory
@@ -42,7 +43,6 @@ def create_dataset():
 
     for images, labels in tqdm.tqdm(all_data_ds_sortet_in_batches):
         for image in images:
-            count_wrong = 0
             for image_to_pair in images:
                 if first:
                     combined_new_data = tf.data.Dataset.from_tensor_slices(([image], [image_to_pair],[1.0]))
@@ -50,6 +50,7 @@ def create_dataset():
                 else:
                     combined_new_data = combined_new_data.concatenate(tf.data.Dataset.from_tensor_slices(([image], [image_to_pair],[1.0])))
                 
+            count_wrong = 0
             while count_wrong < 5:
                 for image_y, label_y in all_data_ds.take(1):
                     target = tf.equal(labels[0], label_y)
@@ -72,10 +73,32 @@ def create_dataset_from_Data(create_new = False):
 
     if(create_new or data_is_not_on_disk):
         #using a thread to free the memory after the dataset is createt (there was a few errors that happend sometimes)
-        p = multiprocessing.Process(target=create_dataset) 
+        p = multiprocessing.Process(target=create_dataset_siames) 
         p.start() 
         p.join()
         combined_new_data = tf.data.experimental.load(path)
 
     return combined_new_data
 
+def create_dataset_for_GAN():
+    img_height = 150
+    img_width = 200
+
+    # we get a sorted and an unsortet dataset to have fewer iterations over the whole data (but it cost memory :() 
+    # It reduced the calculation time by a minimum of 3 minutes
+    correct_data = tf.keras.utils.image_dataset_from_directory(
+        data_dir,
+        color_mode = "grayscale",
+        image_size = (img_height, img_width),
+        batch_size = None
+    )
+
+    forced_data = tf.keras.utils.image_dataset_from_directory(
+        data_dir_forced,
+        color_mode = "grayscale",
+        image_size = (img_height, img_width),
+        batch_size = None
+    )
+
+    combined_data = correct_data.concatenate(forced_data)
+    return combined_data
