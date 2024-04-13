@@ -1,9 +1,4 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
-import tensorflow_datasets as tfds
-from CNN import CNN
-from Siamese_NN import Siamese_Network
-import numpy as np
 import config
 import tqdm
 import multiprocessing
@@ -81,8 +76,8 @@ def create_dataset_from_Data(create_new = False):
     return combined_new_data
 
 def create_dataset_for_GAN():
-    img_height = 150
-    img_width = 200
+    img_height = 144
+    img_width = 192
 
     # we get a sorted and an unsortet dataset to have fewer iterations over the whole data (but it cost memory :() 
     # It reduced the calculation time by a minimum of 3 minutes

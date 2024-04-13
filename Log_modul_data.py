@@ -1,7 +1,7 @@
 # necessary imports
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import numpy as np
+import config
 
 train_res_los = []
 train_res_acc = []
@@ -59,3 +59,46 @@ def show_graph():
         #ax.label_outer()
     
     plt.show()
+
+
+def log_gan(train_summary_writer, gan, noise, epoch):
+
+    #
+    # Write to TensorBoard
+    #
+    
+    with train_summary_writer.as_default():
+
+        if epoch != 0:
+            generator_loss = gan.generator.metric_loss.result()
+            tf.summary.scalar(f"generator_loss", generator_loss, step=epoch)
+            gan.generator.metric_loss.reset_states()
+
+            for metric in gan.discriminator.metrics:
+                tf.summary.scalar(f"discriminator_{metric.name}", metric.result(), step=epoch)
+                print(f"discriminator_{metric.name}: {metric.result()}")
+                metric.reset_states()
+
+        if epoch % 10 == 0:
+            generated_imgs = gan.generator(noise, training=False)
+            # Normalize
+            generated_imgs = (generated_imgs + 1)/2
+            tf.summary.image(name="generated_imgs",data = generated_imgs, step=epoch, max_outputs=config.batch_size)
+
+            save_gan_plot(generated_imgs, epoch)
+        
+def save_gan_plot(examples, epoch, n = 5):
+    examples = (examples + 1) / 2.0
+	# plot images
+    plt.figure(figsize=(10, 10))
+    for i in range(n * n):
+		# define subplot
+        plt.subplot(n, n, 1 + i)
+		# turn off axis
+        plt.axis('off')
+		# plot raw pixel data
+        plt.imshow(examples[i])
+	# save plot to file
+    filename = 'ImageGan/result_e%05d.png' % (epoch)
+    plt.savefig(filename)
+    plt.close()

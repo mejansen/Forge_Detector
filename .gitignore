@@ -750,3 +750,4 @@ FodyWeavers.xsd
 
 #ignore the models, which the net createt
 /saved_models
+/ImageGan

@@ -1,4 +1,5 @@
 import tensorflow as tf
+import config
 
 class Discriminator(tf.keras.Model):
 
@@ -6,12 +7,21 @@ class Discriminator(tf.keras.Model):
         super(Discriminator, self).__init__()
 
         self.layer_list = [
-            tf.keras.layers.Conv2D(16, kernel_size=(3,3), strides=(2,2), padding ="same", activation ='relu'),
-            tf.keras.layers.Conv2D(32, kernel_size=(3,3), strides=(2,2), padding ="same", activation ='relu'),
-            tf.keras.layers.Conv2D(64, kernel_size=(3,3), strides=(2,2), padding ="same", activation ='relu'),
+            tf.keras.layers.Conv2D(filters = 16, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,150,200,32]
+            tf.keras.layers.Conv2D(filters = 16, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,150,200,32]
+            tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+            tf.keras.layers.Conv2D(filters = 32, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,75,100,64]
+            tf.keras.layers.Conv2D(filters = 32, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,75,100,64]
+            tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+            tf.keras.layers.Conv2D(filters = 64, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,37,50,128]
+            tf.keras.layers.Conv2D(filters = 64, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,37,50,128]
+            tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+            tf.keras.layers.Conv2D(filters = 128, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,18,25,256]
+            tf.keras.layers.Conv2D(filters = 128, kernel_size = (3, 3), padding = "same", activation = "relu"),#shape [batch_size,18,25,256]
             tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dense(units = 32, activation= 'relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')
+            tf.keras.layers.Dense(units = 1024, activation = "sigmoid"),
+            tf.keras.layers.Dense(units = 1, activation = "sigmoid")
+
         ]
 
         self.metric_fake_loss = tf.keras.metrics.Mean(name="fake_loss")
@@ -21,7 +31,7 @@ class Discriminator(tf.keras.Model):
         self.metric_real_accuracy = tf.keras.metrics.Accuracy(name="real_accuracy")
         self.metric_fake_accuracy = tf.keras.metrics.Accuracy(name="fake_accuracy")
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=config.learning_rate)
 
     @tf.function
     def call(self, x, training=False):

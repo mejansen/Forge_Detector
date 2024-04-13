@@ -14,8 +14,7 @@ class Siamese_Network(tf.keras.Model):
         self.siam = CNN(output_size = 1024)
 
         # add some dense layers on top that end in a sigmoid activation with only one unit
-        self.dense_layers = [#tf.keras.layers.Dense(units = 512, activation = 'relu'),
-                             #tf.keras.layers.Dense(units = 256, activation = 'relu'),
+        self.dense_layers = [#tf.keras.layers.Dense(units = 256, activation = 'relu'),
                              tf.keras.layers.Dense(units = 256, activation = 'relu'),
                              tf.keras.layers.Dense(units = 1, activation = "sigmoid")]
 
